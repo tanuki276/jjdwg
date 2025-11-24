@@ -123,10 +123,6 @@
             text-align: center;
             padding: 20px;
         }
-        #summary-container {
-            border: 1px solid #ddd;
-            margin-top: 15px;
-        }
         footer {
             text-align: center;
             padding: 15px;
@@ -170,13 +166,8 @@
             
             <div id="flags-container" class="flags-grid">
             </div>
-
-            <h2 style="margin-top: 40px;">Wikipedia Summary (代表的な記事)</h2>
-            <div id="summary-container" style="padding: 20px; background-color: #fff; border-radius: 8px;">
-                <p id="summary-title">記事情報はありません。</p>
-                <div id="summary-content"></div>
-            </div>
-        </section>
+            
+            </section>
     </main>
 
     <footer>
@@ -188,12 +179,12 @@
         const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
 
         // =======================================================
-        // 🛠️ Wikidata SPARQLクエリと整形ロジック (最終安定版: 全文検索)
+        // 🛠️ Wikidata SPARQLクエリと整形ロジック (最終旗特化版)
         // =======================================================
 
         function generateSparqlQuery(keyword, year, type) {
             if (!keyword) return null;
-            
+
             const sparqlQuery = `
                 SELECT DISTINCT 
                     ?item ?itemLabel ?image ?licenseLabel ?authorLabel
@@ -211,14 +202,11 @@
                     UNION
                     { ?item wdt:P94 ?image. }
                     
-                    # 3. キーワードマッチング (SERVICE wikibase:mwapi を使用した柔軟な検索)
-                    SERVICE wikibase:mwapi {
-                        bd:serviceParam wikibase:endpoint "www.wikidata.org".
-                        bd:serviceParam wikibase:api "Generator".
-                        bd:serviceParam mwapi:generator "search".
-                        bd:serviceParam mwapi:gensprop "none".
-                        bd:serviceParam mwapi:gensearch "${keyword}".
-                        ?item wikibase:apiOutputItem mwapi:title.
+                    # 3. キーワードマッチング (Wikidataのアイテムラベルとエイリアスをより広く検索)
+                    {
+                        ?item rdfs:label|skos:altLabel ?searchString .
+                        FILTER(LANG(?searchString) = "ja" || LANG(?searchString) = "en").
+                        FILTER(CONTAINS(LCASE(?searchString), LCASE("${keyword}"))).
                     }
                     
                     # 4. その他のメタデータをオプションで取得
@@ -279,7 +267,7 @@
         }
 
         // =======================================================
-        // 🎨 表示処理関数 (DOWNLOAD LINK対応済み)
+        // 🎨 表示処理関数
         // =======================================================
 
         function renderFlags(flags, container) {
@@ -330,49 +318,6 @@
         }
         
         // =======================================================
-        // 3. Wikipedia Summary API (単一記事/旗の要約を取得)
-        // =======================================================
-
-        async function fetchWikipediaSummary(query) {
-            const summaryTitleElement = document.getElementById('summary-title');
-            const summaryContentElement = document.getElementById('summary-content');
-            
-            summaryTitleElement.textContent = `記事情報はありません。`;
-            summaryContentElement.innerHTML = '';
-            
-            const apiUrl = `https://ja.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
-
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error('記事が見つからないか、API応答エラーが発生しました。');
-                }
-                const data = await response.json();
-                
-                if (data.type === 'disambiguation' || data.type === 'redirect' || !data.extract) {
-                    throw new Error('指定された記事の要約が見つからないか、曖昧さ回避ページです。');
-                }
-
-                summaryTitleElement.textContent = `Wikipedia: ${data.title}`;
-                
-                // リンクを絶対URLに変換し、新しいタブで開くようにする
-                let safeExtract = data.extract_html.replace(/href="\/wiki\//g, `href="https://ja.wikipedia.org/wiki/`).replace(/href="([^"]*)"/g, `href="$1" target="_blank"`);
-
-                summaryContentElement.innerHTML = `
-                    ${data.thumbnail ? `<img src="${data.thumbnail.source}" style="float:right; margin: 0 0 10px 20px; max-width: 250px; height: auto; border: 1px solid #ccc;">` : ''}
-                    <p>${safeExtract}</p> 
-                    <p style="clear: both; margin-top: 20px;">
-                        <a href="${data.content_urls.desktop.page}" target="_blank">→ 詳細を見る</a>
-                    </p>
-                `;
-
-            } catch (error) {
-                summaryTitleElement.textContent = `Wikipedia: ${query} (記事が見つかりません)`;
-                summaryContentElement.innerHTML = `<p class="error-message" style="color:red;">${error.message}</p>`;
-            }
-        }
-
-        // =======================================================
         // 🖱️ イベントリスナー (検索実行部)
         // =======================================================
 
@@ -419,17 +364,14 @@
                 finalFlags = transformWikidataResponse(data); 
 
             } catch (error) {
-                console.error('Wikidata検索に失敗:", error);
-                // 致命的なエラーの場合、エラーメッセージを表示し、Summary APIへ進む
+                console.error('Wikidata検索に失敗:', error);
                 loadingMessage.classList.add('hidden');
-                errorMessage.textContent = "重大なエラーが発生しました。外部APIが応答していません。時間をおいて再度お試しください。";
+                errorMessage.textContent = `重大なエラーが発生しました。外部APIが応答していません。時間をおいて再度お試しください。(${error.message})`;
                 errorMessage.classList.remove('hidden');
+                return;
             }
 
-            // 2. Wikipedia Summary APIの実行 (代表的な記事と旗を取得)
-            await fetchWikipediaSummary(keyword);
-
-            // 3. 表示
+            // 2. 表示
             loadingMessage.classList.add('hidden');
             
             // 重複排除 (IDベース)
@@ -439,11 +381,10 @@
             renderFlags(uniqueFlags, flagsContainer);
             
             if (uniqueFlags.length === 0) {
-                // Wikidata検索結果がゼロの場合のみエラーメッセージを表示
                 errorMessage.textContent = '該当する旗・紋章は見つかりませんでした。';
                 errorMessage.classList.remove('hidden');
             } else {
-                 errorMessage.classList.add('hidden'); // Wikidata検索が成功したらエラーを隠す
+                 errorMessage.classList.add('hidden');
             }
         });
 
