@@ -223,63 +223,55 @@
 
     <script>
         const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
+        
+        // 期間情報（P580, P582）は取得しないため、定数を設定
+        const NO_YEAR_INFO = '期間情報なし (負荷回避)';
 
         // =======================================================
-        // 🛠️ Wikidata SPARQLクエリと整形ロジック (バグ回避・全文検索版)
+        // 🛠️ Wikidata SPARQLクエリと整形ロジック (最小負荷・期間情報なし版)
         // =======================================================
 
         function generateSparqlQuery(keyword, year, type) {
             if (!keyword) return null;
 
+            // ⚠️ 極限まで単純化し、UNION/GROUP BY/SAMPLEを削除
             const sparqlQuery = `
-                SELECT DISTINCT 
-                    ?item ?itemLabel ?image ?licenseLabel ?authorLabel
-                    (SAMPLE(?startDate) AS ?start)
-                    (SAMPLE(?endDate) AS ?end)
-                    (SAMPLE(?type) AS ?typeLabel)
+                SELECT DISTINCT ?item ?itemLabel ?image ?licenseLabel ?authorLabel ?typeLabel
                 WHERE {
-                    # 1. アイテム ?item は、旗 (Q1197825) か紋章 (Q1529158) のインスタンスであること
-                    { ?item wdt:P31 wd:Q1197825. }
-                    UNION
-                    { ?item wdt:P31 wd:Q1529158. }
-                    
-                    # 2. 旗/紋章の画像URLを取得
-                    { ?item wdt:P41 ?image. }
-                    UNION
-                    { ?item wdt:P94 ?image. }
-                    
-                    # 3. キーワードマッチング (ClassCastException回避のため、Wikidata全文検索サービスに切り替え)
-                    SERVICE wikibase:mwapi {
-                        bd:serviceParam wikibase:endpoint "www.wikidata.org".
-                        bd:serviceParam wikibase:api "Generator".
-                        bd:serviceParam mwapi:generator "search".
-                        bd:serviceParam mwapi:genspstart "${keyword}".
-                        bd:serviceParam mwapi:genstlimit "20".
-                        ?item wikibase:apiOutputItem mwapi:item.
+                    # 1. アイテム ?item は、旗 (Q1197825) か紋章 (Q1529158) のいずれか
+                    {
+                        ?item wdt:P31 wd:Q1197825.
+                        OPTIONAL { ?item wdt:P41 ?image. }
                     }
+                    UNION
+                    {
+                        ?item wdt:P31 wd:Q1529158.
+                        OPTIONAL { ?item wdt:P94 ?image. }
+                    }
+
+                    # 2. キーワードマッチング (最も基本的なラベル検索に限定)
+                    ?item rdfs:label ?searchString .
+                    FILTER(LANG(?searchString) = "ja" || LANG(?searchString) = "en").
+                    FILTER(CONTAINS(LCASE(?searchString), LCASE("${keyword}"))).
                     
-                    # 4. その他のメタデータをオプションで取得
+                    # 3. その他のメタデータをオプションで取得
                     OPTIONAL { ?item wdt:P170 ?author. } 
                     OPTIONAL { ?item wdt:P6216 ?license. } 
-                    OPTIONAL { ?item wdt:P580 ?startDate. } 
-                    OPTIONAL { ?item wdt:P582 ?endDate. } 
                     
                     SERVICE wikibase:label { 
                         bd:serviceParam wikibase:language "[AUTO_LANGUAGE],ja,en".
                         ?item rdfs:label ?itemLabel.
-                        OPTIONAL { ?item wdt:P31 ?typeQID. ?typeQID rdfs:label ?type. }
+                        OPTIONAL { ?item wdt:P31 ?typeQID. ?typeQID rdfs:label ?typeLabel. }
                         OPTIONAL { ?license rdfs:label ?licenseLabel. }
                         OPTIONAL { ?author rdfs:label ?authorLabel. }
                     }
                 }
-                GROUP BY ?item ?itemLabel ?image ?licenseLabel ?authorLabel
                 LIMIT 50
             `;
             return sparqlQuery;
         }
 
         function transformWikidataResponse(data) {
-            // ... (省略: 変換ロジックは変更なし)
             if (!data.results || !data.results.bindings) return [];
 
             const flags = data.results.bindings.map(binding => {
@@ -292,19 +284,18 @@
                     licenseUrl = 'https://ja.wikipedia.org/wiki/%E3%83%91%E3%83%96%E3%83%AA%E3%83%83%E3%82%AF%E3%83%89%E3%83%A1%E3%82%A4%E3%83%B3';
                 }
 
-                let startDate = binding.start?.value ? new Date(binding.start.value).getFullYear() : '不明';
-                let endDate = binding.end?.value ? new Date(binding.end.value).getFullYear() : null;
                 let typeLabel = binding.typeLabel?.value || '旗/紋章';
                 let simpleType = typeLabel.includes('紋章') || typeLabel.includes('Coat of arms') ? '国章' : '旗';
 
-                const id = binding.itemLabel?.value + '_' + startDate; 
+                // 期間情報を省略しているため、ID生成と期間表示を簡略化
+                const id = binding.item?.value; 
                 
                 return {
                     id: id,
                     name: binding.itemLabel?.value || '名称不明',
                     type: simpleType,
-                    start_year: startDate,
-                    end_year: endDate,
+                    start_year: NO_YEAR_INFO,
+                    end_year: null, // 期間情報を取得しない
                     image_url: binding.image?.value,
                     license_name: licenseName,
                     license_url: licenseUrl,
@@ -324,7 +315,8 @@
             const summaryTitleElement = document.getElementById('summary-title');
             const summaryContentElement = document.getElementById('summary-content');
             
-            summaryTitleElement.innerHTML = `<span style="color:#666; font-size: 0.9em;">(代表画像と記事情報)</span>`;
+            // 初期状態の表示を修正
+            summaryTitleElement.innerHTML = `<span style="font-weight: bold;">記事情報はありません。</span>`;
             summaryContentElement.innerHTML = '';
             
             const apiUrl = `https://ja.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
@@ -337,24 +329,24 @@
                 const data = await response.json();
                 
                 if (!data.thumbnail) {
-                    summaryTitleElement.innerHTML = `記事情報はありません。`;
+                    summaryTitleElement.innerHTML = `該当するWikipedia記事の代表画像は見つかりませんでした。`;
                     return; 
                 }
 
-                // サムネイル画像とリンクのみ表示
+                // サムネイル画像とリンクのみ表示 (修正済み)
                 summaryContentElement.innerHTML = `
                     <div id="summary-image-wrapper">
                         <a href="${data.content_urls.desktop.page}" target="_blank" title="${data.title} - Wikipedia">
                             <img src="${data.thumbnail.source}" class="summary-image" alt="${data.title}の代表画像">
                         </a>
-                        <p style="font-size: 0.8em; margin-top: 5px;">${data.title}の代表画像</p>
+                        <p style="font-size: 0.8em; margin-top: 5px;"><a href="${data.content_urls.desktop.page}" target="_blank" class="summary-link">→ 詳細を見る (Wikipediaへ)</a></p>
                     </div>
                 `;
                 summaryTitleElement.innerHTML = `<span style="font-weight: bold;">Wikipedia: ${data.title}</span>`;
 
 
             } catch (error) {
-                summaryTitleElement.innerHTML = `記事情報はありません。`;
+                summaryTitleElement.innerHTML = `<span style="font-weight: bold;">Wikipedia: ${query}</span>`;
                 summaryContentElement.innerHTML = `<p class="error-message" style="color:#666; text-align: left; margin: 0;">該当するWikipedia記事の代表画像は見つかりませんでした。</p>`;
             }
         }
@@ -370,7 +362,8 @@
                 
                 const imageUrl = flag.image_url || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="10" fill="#cc0000">画像欠落</text><rect x="0" y="0" width="100" height="100" fill="none" stroke="#ccc" stroke-width="2"/></svg>';
                 
-                const safeFileName = `${flag.name.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, '_')}_${flag.start_year}`;
+                // IDがない場合に備えてファイル名を安全に生成
+                const safeFileName = `${flag.name.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, '_')}`;
 
                 const downloadSection = `
                     <a href="${imageUrl}" download="${safeFileName}.svg" title="${flag.name}をダウンロード">
@@ -383,7 +376,7 @@
                     ${downloadSection}
                     <h3>${flag.name}</h3>
                     <p>種類: ${flag.type || '不明'}</p>
-                    <p>期間: ${flag.start_year || '不明'} - ${flag.end_year || '現行'}</p>
+                    <p>期間: ${NO_YEAR_INFO}</p> 
                     <p style="font-size: 0.8em; color: #004d99;">データ元: ${flag.source}</p>
                 `;
                 
@@ -441,7 +434,7 @@
             let finalFlags = [];
 
             try {
-                // 2. Wikidata検索 (複数の旗を取得)
+                // 2. Wikidata検索 (最小負荷クエリで実行)
                 const response = await fetch(WIKIDATA_ENDPOINT, {
                     method: 'POST',
                     headers: {
