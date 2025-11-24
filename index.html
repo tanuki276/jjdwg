@@ -6,177 +6,39 @@
     <title>liefantidia | 歴史的旗・紋章検索</title> 
     
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-            color: #333;
-        }
-        header {
-            background-color: #004d99;
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        main {
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        /* 検索コントロール */
-        .search-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            padding: 20px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            flex-wrap: wrap;
-        }
-        .search-controls input, 
-        .search-controls select, 
-        .search-controls button {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-            flex-grow: 1;
-        }
-        .search-controls button {
-            background-color: #cc0000;
-            color: white;
-            cursor: pointer;
-            border: none;
-            transition: background-color 0.3s;
-        }
-        .search-controls button:hover {
-            background-color: #990000;
-        }
-        /* 検索結果エリア */
-        .flags-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-        }
-        .flag-card {
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            border-left: 5px solid #004d99;
-        }
-        .flag-card img {
-            max-width: 100%;
-            height: auto;
-            max-height: 150px;
-            border: 1px solid #eee;
-            margin-bottom: 5px;
-        }
-        .flag-card h3 {
-            font-size: 1.1em;
-            margin: 5px 0;
-        }
-        .flag-card p {
-            font-size: 0.9em;
-            color: #666;
-            line-height: 1.4;
-        }
-        /* ダウンロードボタンのスタイル */
-        .flag-card button {
-            margin-top: 5px; 
-            padding: 5px 10px; 
-            background-color: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: background-color 0.2s;
-        }
-        .flag-card button:hover {
-            background-color: #0056b3;
-        }
-        /* ライセンス情報 */
-        .license-info {
-            margin-top: 10px;
-            padding-top: 5px;
-            border-top: 1px dotted #ccc;
-            font-size: 0.75em;
-            color: #004d99;
-        }
-        .license-info a {
-            color: #004d99;
-            text-decoration: none;
-        }
-        .license-info a:hover {
-            text-decoration: underline;
-        }
-        .hidden {
-            display: none;
-        }
-        /* エラー詳細表示スタイル */
-        .error {
-            color: red;
-            font-weight: bold;
-            padding: 20px;
-            white-space: pre-wrap; 
-            word-wrap: break-word; 
-            text-align: left;
-            border: 1px solid red;
-            background-color: #ffeaea;
-            border-radius: 4px;
-        }
-        
-        /* Summary API専用スタイル */
-        #summary-container {
-            border: 1px solid #ddd;
-            margin-top: 15px;
-            padding: 20px; 
-            background-color: #fff; 
-            border-radius: 8px;
-            display: flex; /* Flexboxで画像を横に配置 */
-            align-items: center;
-            gap: 20px;
-        }
-        #summary-image-wrapper {
-            flex-shrink: 0; /* 画像が縮小されないようにする */
-            text-align: center;
-        }
-        .summary-image {
-            max-width: 150px; 
-            height: auto; 
-            border: 1px solid #ccc;
-            display: block;
-        }
-        #summary-content {
-            flex-grow: 1; /* テキストが残りのスペースを占める */
-        }
-        .summary-link {
-            color: #004d99;
-            text-decoration: none;
-        }
-        .summary-link:hover {
-            text-decoration: underline;
-        }
-        
-        footer {
-            text-align: center;
-            padding: 15px;
-            margin-top: 30px;
-            border-top: 1px solid #ddd;
-            font-size: 0.8em;
-            color: #666;
-        }
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; color: #333; }
+        header { background-color: #004d99; color: white; padding: 20px; text-align: center; }
+        main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .search-controls { display: flex; gap: 10px; margin-bottom: 30px; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); flex-wrap: wrap; }
+        .search-controls input, .search-controls select, .search-controls button { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; flex-grow: 1; }
+        .search-controls button { background-color: #cc0000; color: white; cursor: pointer; border: none; transition: background-color 0.3s; }
+        .search-controls button:hover { background-color: #990000; }
+        .flags-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .flag-card { background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); text-align: center; border-left: 5px solid #004d99; }
+        .flag-card img { max-width: 100%; height: auto; max-height: 150px; border: 1px solid #eee; margin-bottom: 5px; }
+        .flag-card h3 { font-size: 1.1em; margin: 5px 0; }
+        .flag-card p { font-size: 0.9em; color: #666; line-height: 1.4; }
+        .flag-card button { margin-top: 5px; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: background-color 0.2s; }
+        .flag-card button:hover { background-color: #0056b3; }
+        .license-info { margin-top: 10px; padding-top: 5px; border-top: 1px dotted #ccc; font-size: 0.75em; color: #004d99; }
+        .license-info a { color: #004d99; text-decoration: none; }
+        .license-info a:hover { text-decoration: underline; }
+        .hidden { display: none; }
+        .error { color: red; font-weight: bold; padding: 20px; white-space: pre-wrap; word-wrap: break-word; text-align: left; border: 1px solid red; background-color: #ffeaea; border-radius: 4px; }
+        #summary-container { border: 1px solid #ddd; margin-top: 15px; padding: 20px; background-color: #fff; border-radius: 8px; display: flex; align-items: center; gap: 20px; }
+        #summary-image-wrapper { flex-shrink: 0; text-align: center; }
+        .summary-image { max-width: 150px; height: auto; border: 1px solid #ccc; display: block; }
+        #summary-content { flex-grow: 1; }
+        .summary-link { color: #004d99; text-decoration: none; }
+        .summary-link:hover { text-decoration: underline; }
+        footer { text-align: center; padding: 15px; margin-top: 30px; border-top: 1px solid #ddd; font-size: 0.8em; color: #666; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>liefantidia | 歴史的旗・紋章検索</h1> 
-        <p>国名、政体名、または旗の種類を入力してください。年号指定は現在非対応です。</p>
+        <p>国名、政体名、または旗の種類を入力してください。**現在、期間情報表示はエラー回避のため停止中です。**</p>
     </header>
 
     <main>
@@ -201,7 +63,7 @@
         <section class="results-area">
             <h2>Wikipedia 記事概要と代表的な旗</h2>
             <div id="summary-container">
-                <p id="summary-title" style="margin: 0;">記事情報はありません。</p>
+                <p id="summary-title" style="margin: 0;"><span style="font-weight: bold;">記事情報はありません。</span></p>
                 <div id="summary-content"></div>
             </div>
 
@@ -223,55 +85,68 @@
 
     <script>
         const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
-        
-        // 期間情報（P580, P582）は取得しないため、定数を設定
         const NO_YEAR_INFO = '期間情報なし (負荷回避)';
 
         // =======================================================
-        // 🛠️ Wikidata SPARQLクエリと整形ロジック (最小負荷・期間情報なし版)
+        // 🛠️ クエリ分離: 旗と紋章を個別のクエリで取得する
         // =======================================================
-
-        function generateSparqlQuery(keyword, year, type) {
-            if (!keyword) return null;
-
-            // ⚠️ 極限まで単純化し、UNION/GROUP BY/SAMPLEを削除
-            const sparqlQuery = `
+        
+        function createSimpleSparqlQuery(keyword, typeQID, imageProperty) {
+            // QID: Q1197825 (旗), Q1529158 (紋章)
+            // imageProperty: wdt:P41 (旗), wdt:P94 (紋章)
+            
+            return `
                 SELECT DISTINCT ?item ?itemLabel ?image ?licenseLabel ?authorLabel ?typeLabel
                 WHERE {
-                    # 1. アイテム ?item は、旗 (Q1197825) か紋章 (Q1529158) のいずれか
-                    {
-                        ?item wdt:P31 wd:Q1197825.
-                        OPTIONAL { ?item wdt:P41 ?image. }
-                    }
-                    UNION
-                    {
-                        ?item wdt:P31 wd:Q1529158.
-                        OPTIONAL { ?item wdt:P94 ?image. }
-                    }
-
-                    # 2. キーワードマッチング (最も基本的なラベル検索に限定)
+                    # 1. アイテム ?item は指定されたタイプ (旗 or 紋章) のインスタンス
+                    ?item wdt:P31 wd:${typeQID}.
+                    
+                    # 2. キーワードマッチング (基本的なラベル検索)
                     ?item rdfs:label ?searchString .
                     FILTER(LANG(?searchString) = "ja" || LANG(?searchString) = "en").
                     FILTER(CONTAINS(LCASE(?searchString), LCASE("${keyword}"))).
                     
-                    # 3. その他のメタデータをオプションで取得
+                    # 3. 画像プロパティ
+                    OPTIONAL { ?item ${imageProperty} ?image. }
+                    
+                    # 4. その他のメタデータをオプションで取得
                     OPTIONAL { ?item wdt:P170 ?author. } 
                     OPTIONAL { ?item wdt:P6216 ?license. } 
                     
                     SERVICE wikibase:label { 
                         bd:serviceParam wikibase:language "[AUTO_LANGUAGE],ja,en".
                         ?item rdfs:label ?itemLabel.
-                        OPTIONAL { ?item wdt:P31 ?typeQID. ?typeQID rdfs:label ?typeLabel. }
+                        OPTIONAL { ?item wdt:P31 wd:${typeQID}. ?item wdt:P31 ?typeQID. ?typeQID rdfs:label ?typeLabel. }
                         OPTIONAL { ?license rdfs:label ?licenseLabel. }
                         OPTIONAL { ?author rdfs:label ?authorLabel. }
                     }
                 }
-                LIMIT 50
-            `;
-            return sparqlQuery;
+                LIMIT 30
+            `; // LIMITを下げて負荷を軽減
         }
 
+        async function fetchWikidata(query) {
+            const response = await fetch(WIKIDATA_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/sparql-results+json',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: `query=${encodeURIComponent(query)}`
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                // 致命的なエラー詳細をスロー
+                throw new Error(`Wikidata接続エラー (HTTP ${response.status})\n\n[Wikidataサーバー詳細情報]\n${errorText}`);
+            }
+
+            return response.json();
+        }
+
+
         function transformWikidataResponse(data) {
+            // ... (省略: 変換ロジックは前バージョンと同じ。期間情報はなし)
             if (!data.results || !data.results.bindings) return [];
 
             const flags = data.results.bindings.map(binding => {
@@ -287,7 +162,6 @@
                 let typeLabel = binding.typeLabel?.value || '旗/紋章';
                 let simpleType = typeLabel.includes('紋章') || typeLabel.includes('Coat of arms') ? '国章' : '旗';
 
-                // 期間情報を省略しているため、ID生成と期間表示を簡略化
                 const id = binding.item?.value; 
                 
                 return {
@@ -295,7 +169,7 @@
                     name: binding.itemLabel?.value || '名称不明',
                     type: simpleType,
                     start_year: NO_YEAR_INFO,
-                    end_year: null, // 期間情報を取得しない
+                    end_year: null, 
                     image_url: binding.image?.value,
                     license_name: licenseName,
                     license_url: licenseUrl,
@@ -310,12 +184,12 @@
         // =======================================================
         // 3. Wikipedia Summary API (サムネイル画像のみを取得・表示)
         // =======================================================
-
+        
         async function fetchWikipediaSummary(query) {
+            // (省略: Summary API関数は変更なし)
             const summaryTitleElement = document.getElementById('summary-title');
             const summaryContentElement = document.getElementById('summary-content');
             
-            // 初期状態の表示を修正
             summaryTitleElement.innerHTML = `<span style="font-weight: bold;">記事情報はありません。</span>`;
             summaryContentElement.innerHTML = '';
             
@@ -333,7 +207,6 @@
                     return; 
                 }
 
-                // サムネイル画像とリンクのみ表示 (修正済み)
                 summaryContentElement.innerHTML = `
                     <div id="summary-image-wrapper">
                         <a href="${data.content_urls.desktop.page}" target="_blank" title="${data.title} - Wikipedia">
@@ -362,7 +235,6 @@
                 
                 const imageUrl = flag.image_url || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="10" fill="#cc0000">画像欠落</text><rect x="0" y="0" width="100" height="100" fill="none" stroke="#ccc" stroke-width="2"/></svg>';
                 
-                // IDがない場合に備えてファイル名を安全に生成
                 const safeFileName = `${flag.name.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, '_')}`;
 
                 const downloadSection = `
@@ -400,13 +272,11 @@
         }
         
         // =======================================================
-        // 🖱️ イベントリスナー (検索実行部)
+        // 🖱️ イベントリスナー (検索実行部 - クエリ分離ロジック)
         // =======================================================
 
         document.getElementById('search-button').addEventListener('click', async () => {
             const keyword = document.getElementById('keyword-input').value.trim();
-            const type = document.getElementById('flag-type-select').value;
-
             const flagsContainer = document.getElementById('flags-container');
             const resultCount = document.getElementById('result-count');
             const loadingMessage = document.getElementById('loading-message');
@@ -419,9 +289,7 @@
             errorMessage.innerHTML = ''; 
             loadingMessage.classList.remove('hidden');
 
-            const sparqlQuery = generateSparqlQuery(keyword, null, type);
-
-            if (!sparqlQuery) {
+            if (!keyword) {
                 loadingMessage.classList.add('hidden');
                 errorMessage.innerHTML = "検索キーワードを入力してください。";
                 errorMessage.classList.remove('hidden');
@@ -432,51 +300,55 @@
             await fetchWikipediaSummary(keyword);
             
             let finalFlags = [];
-
+            let errorOccurred = false;
+            let combinedErrorDetails = "";
+            
+            // 旗検索クエリの作成と実行 (QID: 旗 Q1197825, 画像プロパティ P41)
+            const flagQuery = createSimpleSparqlQuery(keyword, 'Q1197825', 'wdt:P41');
+            
             try {
-                // 2. Wikidata検索 (最小負荷クエリで実行)
-                const response = await fetch(WIKIDATA_ENDPOINT, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/sparql-results+json',
-                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                    },
-                    body: `query=${encodeURIComponent(sparqlQuery)}`
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    // ⚠️ エラー詳細を抽出してスローする
-                    throw new Error(`Wikidata接続エラー (HTTP ${response.status})\n\n[Wikidataサーバー詳細情報]\n${errorText}`);
-                }
-
-                const data = await response.json();
-                finalFlags = transformWikidataResponse(data); 
+                const flagData = await fetchWikidata(flagQuery);
+                finalFlags = finalFlags.concat(transformWikidataResponse(flagData));
 
             } catch (error) {
-                console.error('Wikidata検索に失敗:', error);
-                loadingMessage.classList.add('hidden');
-                
-                // 致命的なエラーメッセージを表示 (詳細な理由を含む)
-                errorMessage.innerHTML = `
-                    **重大なエラーが発生しました。外部APIが応答していません。**
-                    <pre style="margin-top: 10px; padding: 10px; background: #fff0f0; border: 1px dashed #d00;">${error.message}</pre>
-                    時間をおいて再度お試しください。
-                `;
-                errorMessage.classList.remove('hidden');
-                return; // ここで処理を終了
+                errorOccurred = true;
+                combinedErrorDetails += `\n[旗クエリ失敗] ${error.message}`;
+                // SPARQLクエリ全体を詳細情報として表示するため、ここで結合
+                combinedErrorDetails += `\n\n[失敗した旗SPARQLクエリ]\n${flagQuery}`;
             }
 
-            // 3. 表示
+            // 紋章検索クエリの作成と実行 (QID: 紋章 Q1529158, 画像プロパティ P94)
+            const emblemQuery = createSimpleSparqlQuery(keyword, 'Q1529158', 'wdt:P94');
+            
+            try {
+                const emblemData = await fetchWikidata(emblemQuery);
+                finalFlags = finalFlags.concat(transformWikidataResponse(emblemData));
+                
+            } catch (error) {
+                errorOccurred = true;
+                combinedErrorDetails += `\n\n[紋章クエリ失敗] ${error.message}`;
+                // SPARQLクエリ全体を詳細情報として表示するため、ここで結合
+                combinedErrorDetails += `\n\n[失敗した紋章SPARQLクエリ]\n${emblemQuery}`;
+            }
+            
+            // 3. 結果の表示とエラー処理
             loadingMessage.classList.add('hidden');
             
-            // 重複排除 (IDベース)
             const uniqueFlags = Array.from(new Map(finalFlags.map(item => [item.id, item])).values());
-
             resultCount.textContent = uniqueFlags.length;
             renderFlags(uniqueFlags, flagsContainer);
             
-            if (uniqueFlags.length === 0) {
+            if (errorOccurred && combinedErrorDetails) {
+                 // 少なくともどちらかのクエリでエラーが発生した場合
+                errorMessage.innerHTML = `
+                    **重大なエラーが発生しました。外部APIが応答していません。**
+                    <pre style="margin-top: 10px; padding: 10px; background: #fff0f0; border: 1px dashed #d00;">${combinedErrorDetails}</pre>
+                    時間をおいて再度お試しください。
+                `;
+                errorMessage.classList.remove('hidden');
+
+            } else if (uniqueFlags.length === 0) {
+                 // エラーは発生しなかったが結果がゼロだった場合
                 errorMessage.innerHTML = '該当する旗・紋章は見つかりませんでした。';
                 errorMessage.classList.remove('hidden');
             } else {
