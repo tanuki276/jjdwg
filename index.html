@@ -117,11 +117,11 @@
         .hidden {
             display: none;
         }
+        /* エラー詳細表示スタイル */
         .error {
             color: red;
             font-weight: bold;
             padding: 20px;
-            /* 失敗原因の文字列を折り返して表示する */
             white-space: pre-wrap; 
             word-wrap: break-word; 
             text-align: left;
@@ -137,17 +137,22 @@
             padding: 20px; 
             background-color: #fff; 
             border-radius: 8px;
+            display: flex; /* Flexboxで画像を横に配置 */
+            align-items: center;
+            gap: 20px;
+        }
+        #summary-image-wrapper {
+            flex-shrink: 0; /* 画像が縮小されないようにする */
+            text-align: center;
         }
         .summary-image {
-            float:right; 
-            margin: 0 0 10px 20px; 
-            max-width: 250px; 
+            max-width: 150px; 
             height: auto; 
             border: 1px solid #ccc;
+            display: block;
         }
-        .summary-content {
-            clear: both; 
-            margin-top: 20px;
+        #summary-content {
+            flex-grow: 1; /* テキストが残りのスペースを占める */
         }
         .summary-link {
             color: #004d99;
@@ -196,7 +201,7 @@
         <section class="results-area">
             <h2>Wikipedia 記事概要と代表的な旗</h2>
             <div id="summary-container">
-                <p id="summary-title">記事情報はありません。</p>
+                <p id="summary-title" style="margin: 0;">記事情報はありません。</p>
                 <div id="summary-content"></div>
             </div>
 
@@ -220,13 +225,12 @@
         const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
 
         // =======================================================
-        // 🛠️ Wikidata SPARQLクエリと整形ロジック (最終旗特化・最安定版)
+        // 🛠️ Wikidata SPARQLクエリと整形ロジック (バグ回避・全文検索版)
         // =======================================================
 
         function generateSparqlQuery(keyword, year, type) {
             if (!keyword) return null;
 
-            // ⚠️ 接続安定化と検索結果増加のためのクエリ
             const sparqlQuery = `
                 SELECT DISTINCT 
                     ?item ?itemLabel ?image ?licenseLabel ?authorLabel
@@ -244,22 +248,14 @@
                     UNION
                     { ?item wdt:P94 ?image. }
                     
-                    # 3. キーワードマッチング (アイテム名と国名の両方で検索)
-                    {
-                        # A. 旗/紋章自身のラベルにキーワードが含まれる
-                        {
-                            ?item rdfs:label ?searchString .
-                            FILTER(LANG(?searchString) = "ja" || LANG(?searchString) = "en").
-                            FILTER(CONTAINS(LCASE(?searchString), LCASE("${keyword}"))).
-                        }
-                        UNION
-                        # B. 旗が所属する国/政体 (P17) のラベルにキーワードが含まれる
-                        {
-                            ?item wdt:P17 ?country.
-                            ?country rdfs:label ?countryLabel.
-                            FILTER(LANG(?countryLabel) = "ja" || LANG(?countryLabel) = "en").
-                            FILTER(CONTAINS(LCASE(?countryLabel), LCASE("${keyword}"))).
-                        }
+                    # 3. キーワードマッチング (ClassCastException回避のため、Wikidata全文検索サービスに切り替え)
+                    SERVICE wikibase:mwapi {
+                        bd:serviceParam wikibase:endpoint "www.wikidata.org".
+                        bd:serviceParam wikibase:api "Generator".
+                        bd:serviceParam mwapi:generator "search".
+                        bd:serviceParam mwapi:genspstart "${keyword}".
+                        bd:serviceParam mwapi:genstlimit "20".
+                        ?item wikibase:apiOutputItem mwapi:item.
                     }
                     
                     # 4. その他のメタデータをオプションで取得
@@ -321,14 +317,14 @@
         }
 
         // =======================================================
-        // 3. Wikipedia Summary API (代表的な旗の画像と要約を取得)
+        // 3. Wikipedia Summary API (サムネイル画像のみを取得・表示)
         // =======================================================
 
         async function fetchWikipediaSummary(query) {
             const summaryTitleElement = document.getElementById('summary-title');
             const summaryContentElement = document.getElementById('summary-content');
             
-            summaryTitleElement.textContent = `記事情報はありません。`;
+            summaryTitleElement.innerHTML = `<span style="color:#666; font-size: 0.9em;">(代表画像と記事情報)</span>`;
             summaryContentElement.innerHTML = '';
             
             const apiUrl = `https://ja.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
@@ -340,31 +336,31 @@
                 }
                 const data = await response.json();
                 
-                if (data.type === 'disambiguation' || data.type === 'redirect' || !data.extract) {
-                    throw new Error('指定された記事の要約が見つからないか、曖昧さ回避ページです。');
+                if (!data.thumbnail) {
+                    summaryTitleElement.innerHTML = `記事情報はありません。`;
+                    return; 
                 }
 
-                summaryTitleElement.textContent = `Wikipedia: ${data.title}`;
-                
-                let safeExtract = data.extract_html.replace(/href="\/wiki\//g, `href="https://ja.wikipedia.org/wiki/`).replace(/href="([^"]*)"/g, `href="$1" target="_blank"`);
-
+                // サムネイル画像とリンクのみ表示
                 summaryContentElement.innerHTML = `
-                    ${data.thumbnail ? `<img src="${data.thumbnail.source}" class="summary-image" alt="${data.title}の代表画像">` : ''}
-                    <p>${safeExtract}</p> 
-                    <p class="summary-content">
-                        <a href="${data.content_urls.desktop.page}" target="_blank" class="summary-link">→ 詳細を見る (Wikipediaへ)</a>
-                    </p>
+                    <div id="summary-image-wrapper">
+                        <a href="${data.content_urls.desktop.page}" target="_blank" title="${data.title} - Wikipedia">
+                            <img src="${data.thumbnail.source}" class="summary-image" alt="${data.title}の代表画像">
+                        </a>
+                        <p style="font-size: 0.8em; margin-top: 5px;">${data.title}の代表画像</p>
+                    </div>
                 `;
+                summaryTitleElement.innerHTML = `<span style="font-weight: bold;">Wikipedia: ${data.title}</span>`;
+
 
             } catch (error) {
-                summaryTitleElement.textContent = `Wikipedia: ${query} (記事が見つかりません)`;
-                summaryContentElement.innerHTML = `<p class="error-message" style="color:red; text-align: left;">${error.message}</p>`;
+                summaryTitleElement.innerHTML = `記事情報はありません。`;
+                summaryContentElement.innerHTML = `<p class="error-message" style="color:#666; text-align: left; margin: 0;">該当するWikipedia記事の代表画像は見つかりませんでした。</p>`;
             }
         }
         
         // =======================================================
         // 🎨 表示処理関数 (Wikidata)
-        // ... (省略: renderFlags関数は変更なし)
         // =======================================================
         function renderFlags(flags, container) {
             container.innerHTML = '';
@@ -427,7 +423,7 @@
             flagsContainer.innerHTML = '';
             resultCount.textContent = '0';
             errorMessage.classList.add('hidden');
-            errorMessage.innerHTML = ''; // エラー詳細表示のためinnerHTMLをリセット
+            errorMessage.innerHTML = ''; 
             loadingMessage.classList.remove('hidden');
 
             const sparqlQuery = generateSparqlQuery(keyword, null, type);
@@ -456,7 +452,6 @@
                 });
 
                 if (!response.ok) {
-                    // HTTPステータスが200番台以外の場合
                     const errorText = await response.text();
                     // ⚠️ エラー詳細を抽出してスローする
                     throw new Error(`Wikidata接続エラー (HTTP ${response.status})\n\n[Wikidataサーバー詳細情報]\n${errorText}`);
