@@ -123,6 +123,10 @@
             text-align: center;
             padding: 20px;
         }
+        #summary-container {
+            border: 1px solid #ddd;
+            margin-top: 15px;
+        }
         footer {
             text-align: center;
             padding: 15px;
@@ -163,9 +167,14 @@
             <h2>検索結果 (<span id="result-count">0</span>件)</h2>
             <p id="loading-message" class="hidden">検索中... (Wikidata Query Serviceに直接問い合わせています)</p>
             <p id="error-message" class="hidden error">エラーが発生しました。入力内容を確認し、時間をおいて再度お試しください。</p>
-            <p id="local-data-note" class="hidden" style="color:#990000; font-size: 0.9em; text-align: center;">※この結果はローカル（予備）データが補完しています。</p>
             
             <div id="flags-container" class="flags-grid">
+            </div>
+
+            <h2 style="margin-top: 40px;">Wikipedia Summary (代表的な記事)</h2>
+            <div id="summary-container" style="padding: 20px; background-color: #fff; border-radius: 8px;">
+                <p id="summary-title">記事情報はありません。</p>
+                <div id="summary-content"></div>
             </div>
         </section>
     </main>
@@ -177,32 +186,14 @@
 
     <script>
         const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
-        const LOCAL_DATA_FILE = './local_flags_supplement.json'; // 予備データのファイルパス
-        let localFlagsData = [];
-
-        // ページロード時にローカルデータを一度だけ読み込む
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const response = await fetch(LOCAL_DATA_FILE);
-                if (response.ok) {
-                    localFlagsData = await response.json();
-                    console.log(`ローカルデータ ${localFlagsData.length} 件をロードしました。`);
-                } else {
-                    console.warn('ローカルデータファイルが見つからないか、読み込みに失敗しました。');
-                }
-            } catch (e) {
-                console.error('ローカルデータの読み込みエラー:', e);
-            }
-        });
 
         // =======================================================
-        // 🛠️ Wikidata SPARQLクエリと整形ロジック (検索精度向上済み)
+        // 🛠️ Wikidata SPARQLクエリと整形ロジック (最終安定版: 全文検索)
         // =======================================================
 
         function generateSparqlQuery(keyword, year, type) {
             if (!keyword) return null;
-
-            // 🌟 修正済み: P31(インスタンス)で「旗」または「紋章」を直接探し、キーワード一致を強化
+            
             const sparqlQuery = `
                 SELECT DISTINCT 
                     ?item ?itemLabel ?image ?licenseLabel ?authorLabel
@@ -210,33 +201,27 @@
                     (SAMPLE(?endDate) AS ?end)
                     (SAMPLE(?type) AS ?typeLabel)
                 WHERE {
-                    # 1. 探しているアイテム ?item は、旗 (Q1197825) か紋章 (Q1529158) のインスタンスであること
-                    { ?item wdt:P31/wdt:P279* wd:Q1197825. } # 旗 (Q1197825)
+                    # 1. アイテム ?item は、旗 (Q1197825) か紋章 (Q1529158) のインスタンスであること
+                    { ?item wdt:P31/wdt:P279* wd:Q1197825. }
                     UNION
-                    { ?item wdt:P31/wdt:P279* wd:Q1529158. } # 国章/紋章 (Q1529158)
+                    { ?item wdt:P31/wdt:P279* wd:Q1529158. }
                     
                     # 2. 旗/紋章の画像URLを取得
-                    { ?item wdt:P41 ?image. } # 旗の画像
+                    { ?item wdt:P41 ?image. }
                     UNION
-                    { ?item wdt:P94 ?image. } # 紋章の画像
+                    { ?item wdt:P94 ?image. }
                     
-                    # 3. キーワードマッチング (UNIONで、より広くヒットさせる)
-                    {
-                        # A. 旗/紋章自身のラベルにキーワードが含まれる
-                        ?item rdfs:label ?itemLabel.
-                        FILTER(LANG(?itemLabel) = "ja" || LANG(?itemLabel) = "en").
-                        FILTER(CONTAINS(LCASE(?itemLabel), LCASE("${keyword}"))).
-                    }
-                    UNION
-                    {
-                        # B. 旗/紋章が所属する国/政体 (P17) のラベルにキーワードが含まれる
-                        ?item wdt:P17 ?country.
-                        ?country rdfs:label ?countryLabel.
-                        FILTER(LANG(?countryLabel) = "ja" || LANG(?countryLabel) = "en").
-                        FILTER(CONTAINS(LCASE(?countryLabel), LCASE("${keyword}"))).
+                    # 3. キーワードマッチング (SERVICE wikibase:mwapi を使用した柔軟な検索)
+                    SERVICE wikibase:mwapi {
+                        bd:serviceParam wikibase:endpoint "www.wikidata.org".
+                        bd:serviceParam wikibase:api "Generator".
+                        bd:serviceParam mwapi:generator "search".
+                        bd:serviceParam mwapi:gensprop "none".
+                        bd:serviceParam mwapi:gensearch "${keyword}".
+                        ?item wikibase:apiOutputItem mwapi:title.
                     }
                     
-                    # 4. その他のメタデータをオプションで取得 (期間、ライセンス、作者)
+                    # 4. その他のメタデータをオプションで取得
                     OPTIONAL { ?item wdt:P170 ?author. } 
                     OPTIONAL { ?item wdt:P6216 ?license. } 
                     OPTIONAL { ?item wdt:P580 ?startDate. } 
@@ -294,33 +279,6 @@
         }
 
         // =======================================================
-        // 💾 ローカルデータ検索ロジック (予備)
-        // =======================================================
-        
-        function searchLocalData(keyword) {
-            if (localFlagsData.length === 0) return [];
-
-            const lowerKeyword = keyword.toLowerCase();
-            const results = localFlagsData.filter(flag => {
-                return flag.keywords_ja.some(k => k.toLowerCase().includes(lowerKeyword)) || 
-                       flag.name_ja.toLowerCase().includes(lowerKeyword);
-            });
-
-            return results.map(flag => ({
-                id: 'local_' + flag.name_ja,
-                name: flag.name_ja,
-                type: flag.type || '旗/紋章 (ローカル)',
-                start_year: flag.start_year || '不明', 
-                end_year: flag.end_year || null,
-                image_url: flag.image_path,
-                license_name: flag.license_name || '要確認',
-                license_url: flag.license_url || '#',
-                author: flag.author || '不明',
-                source: flag.metadata_source || 'Local File'
-            }));
-        }
-
-        // =======================================================
         // 🎨 表示処理関数 (DOWNLOAD LINK対応済み)
         // =======================================================
 
@@ -372,6 +330,49 @@
         }
         
         // =======================================================
+        // 3. Wikipedia Summary API (単一記事/旗の要約を取得)
+        // =======================================================
+
+        async function fetchWikipediaSummary(query) {
+            const summaryTitleElement = document.getElementById('summary-title');
+            const summaryContentElement = document.getElementById('summary-content');
+            
+            summaryTitleElement.textContent = `記事情報はありません。`;
+            summaryContentElement.innerHTML = '';
+            
+            const apiUrl = `https://ja.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error('記事が見つからないか、API応答エラーが発生しました。');
+                }
+                const data = await response.json();
+                
+                if (data.type === 'disambiguation' || data.type === 'redirect' || !data.extract) {
+                    throw new Error('指定された記事の要約が見つからないか、曖昧さ回避ページです。');
+                }
+
+                summaryTitleElement.textContent = `Wikipedia: ${data.title}`;
+                
+                // リンクを絶対URLに変換し、新しいタブで開くようにする
+                let safeExtract = data.extract_html.replace(/href="\/wiki\//g, `href="https://ja.wikipedia.org/wiki/`).replace(/href="([^"]*)"/g, `href="$1" target="_blank"`);
+
+                summaryContentElement.innerHTML = `
+                    ${data.thumbnail ? `<img src="${data.thumbnail.source}" style="float:right; margin: 0 0 10px 20px; max-width: 250px; height: auto; border: 1px solid #ccc;">` : ''}
+                    <p>${safeExtract}</p> 
+                    <p style="clear: both; margin-top: 20px;">
+                        <a href="${data.content_urls.desktop.page}" target="_blank">→ 詳細を見る</a>
+                    </p>
+                `;
+
+            } catch (error) {
+                summaryTitleElement.textContent = `Wikipedia: ${query} (記事が見つかりません)`;
+                summaryContentElement.innerHTML = `<p class="error-message" style="color:red;">${error.message}</p>`;
+            }
+        }
+
+        // =======================================================
         // 🖱️ イベントリスナー (検索実行部)
         // =======================================================
 
@@ -383,13 +384,11 @@
             const resultCount = document.getElementById('result-count');
             const loadingMessage = document.getElementById('loading-message');
             const errorMessage = document.getElementById('error-message');
-            const localDataNote = document.getElementById('local-data-note');
 
             // 表示をリセット
             flagsContainer.innerHTML = '';
             resultCount.textContent = '0';
             errorMessage.classList.add('hidden');
-            localDataNote.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
 
             const sparqlQuery = generateSparqlQuery(keyword, null, type);
@@ -401,12 +400,10 @@
                 return;
             }
             
-            let structuredFlags = [];
             let finalFlags = [];
-            let usedLocalFallback = false;
 
             try {
-                // 1. Wikidata検索 (プライマリ)
+                // 1. Wikidata検索 (複数の旗を取得)
                 const response = await fetch(WIKIDATA_ENDPOINT, {
                     method: 'POST',
                     headers: {
@@ -419,39 +416,18 @@
                 if (!response.ok) throw new Error(`Wikidata接続エラー (HTTP ${response.status})`); 
 
                 const data = await response.json();
-                structuredFlags = transformWikidataResponse(data); 
+                finalFlags = transformWikidataResponse(data); 
 
             } catch (error) {
-                console.error('Wikidata検索に失敗:', error);
-                // 致命的なエラーの場合、ローカルデータにフォールバック
-                finalFlags = searchLocalData(keyword);
-                usedLocalFallback = true;
+                console.error('Wikidata検索に失敗:", error);
+                // 致命的なエラーの場合、エラーメッセージを表示し、Summary APIへ進む
+                loadingMessage.classList.add('hidden');
+                errorMessage.textContent = "重大なエラーが発生しました。外部APIが応答していません。時間をおいて再度お試しください。";
+                errorMessage.classList.remove('hidden');
             }
 
-            // 2. 結果の結合と補完
-            if (structuredFlags.length > 0) {
-                const localMap = new Map();
-                searchLocalData(keyword).forEach(flag => localMap.set(flag.name, flag));
-                
-                structuredFlags.forEach(flag => {
-                    if (!flag.image_url) {
-                        const localFlag = localMap.get(flag.name);
-                        if (localFlag) {
-                            flag.image_url = localFlag.image_url;
-                            flag.license_name = flag.license_name === '不明なライセンス' ? localFlag.license_name : flag.license_name;
-                            flag.source = 'Wikidata (画像:Local)';
-                            localMap.delete(flag.name); 
-                        }
-                    }
-                    finalFlags.push(flag);
-                });
-
-                localMap.forEach(flag => finalFlags.push(flag));
-                
-            } else if (!usedLocalFallback) { 
-                finalFlags = searchLocalData(keyword);
-                usedLocalFallback = true;
-            }
+            // 2. Wikipedia Summary APIの実行 (代表的な記事と旗を取得)
+            await fetchWikipediaSummary(keyword);
 
             // 3. 表示
             loadingMessage.classList.add('hidden');
@@ -462,11 +438,12 @@
             resultCount.textContent = uniqueFlags.length;
             renderFlags(uniqueFlags, flagsContainer);
             
-            if (usedLocalFallback && uniqueFlags.length > 0) {
-                localDataNote.classList.remove('hidden');
-            } else if (uniqueFlags.length === 0) {
+            if (uniqueFlags.length === 0) {
+                // Wikidata検索結果がゼロの場合のみエラーメッセージを表示
                 errorMessage.textContent = '該当する旗・紋章は見つかりませんでした。';
                 errorMessage.classList.remove('hidden');
+            } else {
+                 errorMessage.classList.add('hidden'); // Wikidata検索が成功したらエラーを隠す
             }
         });
 
