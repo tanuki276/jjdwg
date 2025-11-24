@@ -179,7 +179,7 @@
         const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
 
         // =======================================================
-        // 🛠️ Wikidata SPARQLクエリと整形ロジック (最終旗特化・安定版)
+        // 🛠️ Wikidata SPARQLクエリと整形ロジック (最終旗特化・最安定版)
         // =======================================================
 
         function generateSparqlQuery(keyword, year, type) {
@@ -193,20 +193,32 @@
                     (SAMPLE(?type) AS ?typeLabel)
                 WHERE {
                     # 1. アイテム ?item は、旗 (Q1197825) か紋章 (Q1529158) のインスタンスであること
-                    { ?item wdt:P31/wdt:P279* wd:Q1197825. }
+                    # ⚠️ 負荷軽減のため、再帰検索(P279*)を削除し、直接インスタンス(P31)で絞る
+                    { ?item wdt:P31 wd:Q1197825. }
                     UNION
-                    { ?item wdt:P31/wdt:P279* wd:Q1529158. }
+                    { ?item wdt:P31 wd:Q1529158. }
                     
                     # 2. 旗/紋章の画像URLを取得
                     { ?item wdt:P41 ?image. }
                     UNION
                     { ?item wdt:P94 ?image. }
                     
-                    # 3. キーワードマッチング (負荷軽減版: rdfs:labelのみで検索)
+                    # 3. キーワードマッチング (検索結果を最大化するため、アイテム名と国名の両方で検索)
                     {
-                        ?item rdfs:label ?searchString . 
-                        FILTER(LANG(?searchString) = "ja" || LANG(?searchString) = "en").
-                        FILTER(CONTAINS(LCASE(?searchString), LCASE("${keyword}"))).
+                        # A. 旗/紋章自身のラベルにキーワードが含まれる
+                        {
+                            ?item rdfs:label ?searchString .
+                            FILTER(LANG(?searchString) = "ja" || LANG(?searchString) = "en").
+                            FILTER(CONTAINS(LCASE(?searchString), LCASE("${keyword}"))).
+                        }
+                        UNION
+                        # B. 旗が所属する国/政体 (P17) のラベルにキーワードが含まれる
+                        {
+                            ?item wdt:P17 ?country.
+                            ?country rdfs:label ?countryLabel.
+                            FILTER(LANG(?countryLabel) = "ja" || LANG(?countryLabel) = "en").
+                            FILTER(CONTAINS(LCASE(?countryLabel), LCASE("${keyword}"))).
+                        }
                     }
                     
                     # 4. その他のメタデータをオプションで取得
