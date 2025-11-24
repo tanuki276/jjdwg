@@ -167,7 +167,7 @@
             <div id="flags-container" class="flags-grid">
             </div>
             
-            </section>
+        </section>
     </main>
 
     <footer>
@@ -179,7 +179,7 @@
         const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
 
         // =======================================================
-        // 🛠️ Wikidata SPARQLクエリと整形ロジック (最終旗特化版)
+        // 🛠️ Wikidata SPARQLクエリと整形ロジック (最終旗特化・安定版)
         // =======================================================
 
         function generateSparqlQuery(keyword, year, type) {
@@ -202,9 +202,9 @@
                     UNION
                     { ?item wdt:P94 ?image. }
                     
-                    # 3. キーワードマッチング (Wikidataのアイテムラベルとエイリアスをより広く検索)
+                    # 3. キーワードマッチング (負荷軽減版: rdfs:labelのみで検索)
                     {
-                        ?item rdfs:label|skos:altLabel ?searchString .
+                        ?item rdfs:label ?searchString . 
                         FILTER(LANG(?searchString) = "ja" || LANG(?searchString) = "en").
                         FILTER(CONTAINS(LCASE(?searchString), LCASE("${keyword}"))).
                     }
@@ -358,7 +358,10 @@
                     body: `query=${encodeURIComponent(sparqlQuery)}`
                 });
 
-                if (!response.ok) throw new Error(`Wikidata接続エラー (HTTP ${response.status})`); 
+                if (!response.ok) {
+                    // HTTP 500などのサーバーエラー
+                    throw new Error(`Wikidata接続エラー (HTTP ${response.status})`); 
+                }
 
                 const data = await response.json();
                 finalFlags = transformWikidataResponse(data); 
@@ -366,9 +369,10 @@
             } catch (error) {
                 console.error('Wikidata検索に失敗:', error);
                 loadingMessage.classList.add('hidden');
+                // 致命的なエラーメッセージを表示
                 errorMessage.textContent = `重大なエラーが発生しました。外部APIが応答していません。時間をおいて再度お試しください。(${error.message})`;
                 errorMessage.classList.remove('hidden');
-                return;
+                return; // ここで処理を終了
             }
 
             // 2. 表示
