@@ -1,186 +1,459 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>利用規約 | 猫bot（Discord）</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet" />
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    integrity="sha512-k6RqeWeci5ZR/Lv4MR0sA0FfDOMU3rZ2eAz7pGlkY5VnGvXb+73bJ9r8krjxVpzF9KqZNVZRlvvl2lfHQtN0cw=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  />
-  <style>
-    body {
-      font-family: 'Noto Sans JP', sans-serif;
-      background-color: #fffaf7;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background: linear-gradient(135deg, #ffe5ec, #ffdfe7);
-      text-align: center;
-      padding: 3em 1em;
-    }
-
-    header i.fa-cat {
-      font-size: 3em;
-      color: #c2185b;
-      margin-bottom: 0.5em;
-    }
-
-    header h1 {
-      font-size: 2.2em;
-      color: #c2185b;
-    }
-
-    main {
-      max-width: 740px;
-      margin: 2em auto;
-      background-color: #fff;
-      padding: 2em;
-      border-radius: 1.5em;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-    }
-
-    .section-title {
-      display: flex;
-      align-items: center;
-      font-size: 1.3em;
-      font-weight: bold;
-      color: #e91e63;
-      margin-bottom: 0.5em;
-    }
-
-    .section-title i {
-      font-size: 1.3em;
-      margin-right: 0.6em;
-    }
-
-    p,
-    ul {
-      font-size: 1em;
-      line-height: 1.7;
-      margin: 0.5em 0;
-    }
-
-    ul {
-      padding-left: 1.5em;
-    }
-
-    footer {
-      text-align: center;
-      font-size: 0.9em;
-      color: #999;
-      margin: 3em 0 1em;
-    }
-
-    @media (max-width: 600px) {
-      main {
-        margin: 1em;
-        padding: 1.5em;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>liefantidia | 歴史的旗・紋章検索</title> 
+    
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        header {
+            background-color: #004d99;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        /* 検索コントロール */
+        .search-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+        }
+        .search-controls input, 
+        .search-controls select, 
+        .search-controls button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            flex-grow: 1;
+        }
+        .search-controls button {
+            background-color: #cc0000;
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        .search-controls button:hover {
+            background-color: #990000;
+        }
+        /* 検索結果エリア */
+        .flags-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .flag-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border-left: 5px solid #004d99;
+        }
+        .flag-card img {
+            max-width: 100%;
+            height: auto;
+            max-height: 150px;
+            border: 1px solid #eee;
+            margin-bottom: 5px;
+        }
+        .flag-card h3 {
+            font-size: 1.1em;
+            margin: 5px 0;
+        }
+        .flag-card p {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.4;
+        }
+        /* ダウンロードボタンのスタイル */
+        .flag-card button {
+            margin-top: 5px; 
+            padding: 5px 10px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s;
+        }
+        .flag-card button:hover {
+            background-color: #0056b3;
+        }
+        /* ライセンス情報 */
+        .license-info {
+            margin-top: 10px;
+            padding-top: 5px;
+            border-top: 1px dotted #ccc;
+            font-size: 0.75em;
+            color: #004d99;
+        }
+        .license-info a {
+            color: #004d99;
+            text-decoration: none;
+        }
+        .license-info a:hover {
+            text-decoration: underline;
+        }
+        .hidden {
+            display: none;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+        }
+        footer {
+            text-align: center;
+            padding: 15px;
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            font-size: 0.8em;
+            color: #666;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <i class="fas fa-cat"></i>
-    <h1>猫bot 利用規約</h1>
-  </header>
 
-  <main>
-    <section>
-      <div class="section-title"><i class="fas fa-handshake"></i><span>はじめに</span></div>
-      <p>
-        本利用規約（以下、「本規約」といいます。）は、soln（以下、「当社」といいます。）が提供するDiscord用Bot「猫bot」（以下、「本Bot」といいます。）の利用条件を定めるものです。ユーザーの皆様には、本規約に同意の上ご利用いただきます。
-      </p>
-    </section>
+    <header>
+        <h1>liefantidia | 歴史的旗・紋章検索</h1> 
+        <p>国名、政体名、または旗の種類を入力してください。年号指定は現在非対応です。</p>
+    </header>
 
-    <section>
-      <div class="section-title"><i class="fas fa-user-check"></i><span>利用条件</span></div>
-      <p>本Botのご利用にあたっては、以下の条件を遵守いただく必要があります：</p>
-      <ul>
-        <li>Discordの利用規約およびコミュニティガイドラインに従うこと</li>
-        <li>本Botの機能を悪用しないこと</li>
-        <li>当社または第三者の権利を侵害しないこと</li>
-      </ul>
-    </section>
+    <main>
+        <section class="search-controls">
+            <input type="text" id="keyword-input" placeholder="国名やキーワード (例: 清朝, ドイツ)" aria-label="キーワード検索">
+            
+            <input type="number" id="year-input" placeholder="年号 (非対応)" min="1" max="2025" aria-label="年号指定" style="display: none;">
+            
+            <select id="flag-type-select" aria-label="旗の種類選択">
+                <option value="">全ての種類 (旗と紋章)</option>
+                <option value="国旗">国旗</option>
+                <option value="軍旗">軍旗</option>
+                <option value="商船旗">商船旗</option>
+                <option value="政党旗">政党旗</option>
+                <option value="国章">国章</option>
+                <option value="軍艦旗">軍艦旗</option>
+            </select>
 
-    <section>
-      <div class="section-title"><i class="fas fa-ban"></i><span>禁止事項</span></div>
-      <p>以下の行為は禁止いたします：</p>
-      <ul>
-        <li>違法行為や公序良俗に反する行為</li>
-        <li>他のユーザーや第三者を誹謗中傷する行為</li>
-        <li>本Botの運営を妨害する行為</li>
-        <li>スパムや自動化ツールの使用</li>
-      </ul>
-    </section>
+            <button id="search-button">検索</button>
+        </section>
 
-    <section>
-      <div class="section-title"><i class="fas fa-exclamation-triangle"></i><span>免責事項</span></div>
-      <p>
-        本Botは現状のまま提供されており、その利用に関して当社は一切の保証をいたしません。利用によって生じたいかなる損害についても、当社は責任を負いかねますのでご了承ください。
-      </p>
-    </section>
+        <section class="results-area">
+            <h2>検索結果 (<span id="result-count">0</span>件)</h2>
+            <p id="loading-message" class="hidden">検索中... (Wikidata Query Serviceに直接問い合わせています)</p>
+            <p id="error-message" class="hidden error">エラーが発生しました。入力内容を確認し、時間をおいて再度お試しください。</p>
+            <p id="local-data-note" class="hidden" style="color:#990000; font-size: 0.9em; text-align: center;">※この結果はローカル（予備）データが補完しています。</p>
+            
+            <div id="flags-container" class="flags-grid">
+            </div>
+        </section>
+    </main>
 
-    <section>
-      <div class="section-title"><i class="fas fa-tools"></i><span>サービスの変更・中断・終了</span></div>
-      <p>
-        当社は予告なく本Botのサービス内容の変更、中断または終了を行うことがあります。これにより利用者に生じた損害について、当社は一切の責任を負いません。
-      </p>
-    </section>
+    <footer>
+        <p>データは**Wikidata**および**Wikimedia Commons**から取得されています。</p>
+        <p>自由なライセンスに基づき表示していますが、**必ず各カードの出典をご確認ください。**</p>
+    </footer>
 
-    <section>
-      <div class="section-title"><i class="fas fa-bolt"></i><span>サービスの停止について</span></div>
-      <p>
-        猫botは不具合やメンテナンス、サーバーの状況によって予告なく一時的に停止することがあります。<br />
-        ご迷惑をおかけしますが、何卒ご理解いただけますと幸いです。
-      </p>
-    </section>
+    <script>
+        const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
+        const LOCAL_DATA_FILE = './local_flags_supplement.json'; // 予備データのファイルパス
+        let localFlagsData = [];
 
-    <section>
-      <div class="section-title"><i class="fas fa-copyright"></i><span>著作権・知的財産権</span></div>
-      <p>
-        本Botおよび本規約に関する著作権・知的財産権はすべて当社または正当な権利者に帰属します。無断転載や複製は禁止されています。
-      </p>
-    </section>
+        // ページロード時にローカルデータを一度だけ読み込む
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch(LOCAL_DATA_FILE);
+                if (response.ok) {
+                    localFlagsData = await response.json();
+                    console.log(`ローカルデータ ${localFlagsData.length} 件をロードしました。`);
+                } else {
+                    console.warn('ローカルデータファイルが見つからないか、読み込みに失敗しました。');
+                }
+            } catch (e) {
+                console.error('ローカルデータの読み込みエラー:', e);
+            }
+        });
 
-    <section>
-      <div class="section-title"><i class="fas fa-user-shield"></i><span>利用者の責任</span></div>
-      <p>
-        利用者は自己の責任において本Botを利用し、トラブルや損害が発生した場合でも当社は一切の責任を負いません。
-      </p>
-    </section>
+        // =======================================================
+        // 🛠️ Wikidata SPARQLクエリと整形ロジック
+        // =======================================================
 
-    <section>
-      <div class="section-title"><i class="fas fa-gavel"></i><span>準拠法・紛争解決</span></div>
-      <p>
-        本規約は日本法に基づいておりますが、万が一トラブルが発生した場合は、まずは双方が誠実に話し合いによって解決することを目指します。<br />
-        裁判などの法的手続きは、最終手段としてのみ検討いたします。
-      </p>
-    </section>
+        function generateSparqlQuery(keyword, year, type) {
+            if (!keyword) return null;
 
-    <section>
-  <div class="section-title"><i class="fas fa-envelope"></i><span>お問い合わせ</span></div>
-  <p>
-    本利用規約についてご質問がある場合は、<a href="https://otoiawase-gon.vercel.app/contact" target="_blank" rel="noopener noreferrer">こちらのお問い合わせページ</a>から運営チームまでご連絡ください。
-  </p>
-</section>
+            let imageProp = "wdt:P41|wdt:P94"; // 旗(P41)と国章(P94)
+            if (type === "国章") {
+                imageProp = "wdt:P94";
+            } else if (type !== "") {
+                imageProp = "wdt:P41";
+            }
 
-    <p>
-      制定日：2025年6月2日<br />
-      運営：soln
-    </p>
-  </main>
+            const sparqlQuery = `
+                SELECT DISTINCT 
+                    ?item ?itemLabel ?image ?licenseLabel ?authorLabel
+                    (SAMPLE(?startDate) AS ?start)
+                    (SAMPLE(?endDate) AS ?end)
+                    (SAMPLE(?type) AS ?typeLabel)
+                WHERE {
+                    ?country rdfs:label ?countryLabel.
+                    FILTER(LANG(?countryLabel) = "ja" || LANG(?countryLabel) = "en").
+                    FILTER(CONTAINS(LCASE(?countryLabel), LCASE("${keyword}"))).
+                    
+                    ?item ${imageProp} ?image.
+                    OPTIONAL { ?item wdt:P17 ?country. } 
+                    OPTIONAL { ?item wdt:P170 ?author. } 
+                    OPTIONAL { ?item wdt:P6216 ?license. } 
+                    OPTIONAL { ?item wdt:P580 ?startDate. } 
+                    OPTIONAL { ?item wdt:P582 ?endDate. } 
+                    
+                    SERVICE wikibase:label { 
+                        bd:serviceParam wikibase:language "[AUTO_LANGUAGE],ja,en".
+                        ?item rdfs:label ?itemLabel.
+                        OPTIONAL { ?item wdt:P31 ?typeQID. ?typeQID rdfs:label ?type. }
+                        OPTIONAL { ?license rdfs:label ?licenseLabel. }
+                        OPTIONAL { ?author rdfs:label ?authorLabel. }
+                    }
+                }
+                GROUP BY ?item ?itemLabel ?image ?licenseLabel ?authorLabel
+                LIMIT 50
+            `;
+            return sparqlQuery;
+        }
 
-  <footer>
-    &copy; 2025 soln. All Rights Reserved.
-  </footer>
+        function transformWikidataResponse(data) {
+            if (!data.results || !data.results.bindings) return [];
+
+            const flags = data.results.bindings.map(binding => {
+                let licenseName = binding.licenseLabel?.value || '不明なライセンス';
+                let licenseUrl = '';
+                
+                if (licenseName.includes('Creative Commons')) {
+                    licenseUrl = 'https://creativecommons.org/licenses/by-sa/4.0/deed.ja';
+                } else if (licenseName.includes('Public Domain')) {
+                    licenseUrl = 'https://ja.wikipedia.org/wiki/%E3%83%91%E3%83%96%E3%83%AA%E3%83%83%E3%82%AF%E3%83%89%E3%83%A1%E3%82%A4%E3%83%B3';
+                }
+
+                let startDate = binding.start?.value ? new Date(binding.start.value).getFullYear() : '不明';
+                let endDate = binding.end?.value ? new Date(binding.end.value).getFullYear() : null;
+                let typeLabel = binding.typeLabel?.value || '旗/紋章';
+                let simpleType = typeLabel.includes('紋章') || typeLabel.includes('Coat of arms') ? '国章' : '旗';
+
+                const id = binding.itemLabel?.value + '_' + startDate; 
+                
+                return {
+                    id: id,
+                    name: binding.itemLabel?.value || '名称不明',
+                    type: simpleType,
+                    start_year: startDate,
+                    end_year: endDate,
+                    image_url: binding.image?.value,
+                    license_name: licenseName,
+                    license_url: licenseUrl,
+                    author: binding.authorLabel?.value || '不明',
+                    source: 'Wikidata'
+                };
+            });
+            
+            return flags;
+        }
+
+        // =======================================================
+        // 💾 ローカルデータ検索ロジック (予備)
+        // =======================================================
+        
+        function searchLocalData(keyword) {
+            if (localFlagsData.length === 0) return [];
+
+            const lowerKeyword = keyword.toLowerCase();
+            const results = localFlagsData.filter(flag => {
+                return flag.keywords_ja.some(k => k.toLowerCase().includes(lowerKeyword)) || 
+                       flag.name_ja.toLowerCase().includes(lowerKeyword);
+            });
+
+            return results.map(flag => ({
+                id: 'local_' + flag.name_ja,
+                name: flag.name_ja,
+                type: flag.type || '旗/紋章 (ローカル)',
+                start_year: flag.start_year || '不明', 
+                end_year: flag.end_year || null,
+                image_url: flag.image_path,
+                license_name: flag.license_name || '要確認',
+                license_url: flag.license_url || '#',
+                author: flag.author || '不明',
+                source: flag.metadata_source || 'Local File'
+            }));
+        }
+
+        // =======================================================
+        // 🎨 表示処理関数 (DOWNLOAD LINK対応済み)
+        // =======================================================
+
+        function renderFlags(flags, container) {
+            container.innerHTML = '';
+            flags.forEach(flag => {
+                const card = document.createElement('div');
+                card.className = 'flag-card';
+                
+                const imageUrl = flag.image_url || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="10" fill="#cc0000">画像欠落</text><rect x="0" y="0" width="100" height="100" fill="none" stroke="#ccc" stroke-width="2"/></svg>';
+                
+                const safeFileName = `${flag.name.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, '_')}_${flag.start_year}`;
+
+                const downloadSection = `
+                    <a href="${imageUrl}" download="${safeFileName}.svg" title="${flag.name}をダウンロード">
+                        <img src="${imageUrl}" alt="${flag.name}">
+                    </a>
+                    <button onclick="window.open('${imageUrl}', '_blank')">画像を別タブで開く</button>
+                `;
+
+                // カードのメインコンテンツ
+                card.innerHTML = `
+                    ${downloadSection}
+                    <h3>${flag.name}</h3>
+                    <p>種類: ${flag.type || '不明'}</p>
+                    <p>期間: ${flag.start_year || '不明'} - ${flag.end_year || '現行'}</p>
+                    <p style="font-size: 0.8em; color: #004d99;">データ元: ${flag.source}</p>
+                `;
+                
+                // ライセンス情報
+                const licenseInfo = document.createElement('p');
+                licenseInfo.className = 'license-info';
+                
+                let licenseText = '出典: ';
+                licenseText += flag.author ? `作者: ${flag.author}` : `情報源`;
+                
+                if (flag.license_name && flag.license_url) {
+                    licenseText += `, <a href="${flag.license_url}" target="_blank">${flag.license_name}</a>`;
+                } else if (flag.license_name) {
+                    licenseText += `, ${flag.license_name}`;
+                }
+
+                licenseInfo.innerHTML = licenseText;
+                card.appendChild(licenseInfo);
+                
+                container.appendChild(card);
+            });
+        }
+        
+        // =======================================================
+        // 🖱️ イベントリスナー (検索実行部)
+        // =======================================================
+
+        document.getElementById('search-button').addEventListener('click', async () => {
+            const keyword = document.getElementById('keyword-input').value.trim();
+            const type = document.getElementById('flag-type-select').value;
+
+            const flagsContainer = document.getElementById('flags-container');
+            const resultCount = document.getElementById('result-count');
+            const loadingMessage = document.getElementById('loading-message');
+            const errorMessage = document.getElementById('error-message');
+            const localDataNote = document.getElementById('local-data-note');
+
+            // 表示をリセット
+            flagsContainer.innerHTML = '';
+            resultCount.textContent = '0';
+            errorMessage.classList.add('hidden');
+            localDataNote.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+
+            const sparqlQuery = generateSparqlQuery(keyword, null, type);
+
+            if (!sparqlQuery) {
+                loadingMessage.classList.add('hidden');
+                errorMessage.textContent = "検索キーワードを入力してください。";
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            
+            let structuredFlags = [];
+            let finalFlags = [];
+            let usedLocalFallback = false;
+
+            try {
+                // 1. Wikidata検索 (プライマリ)
+                const response = await fetch(WIKIDATA_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/sparql-results+json',
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: `query=${encodeURIComponent(sparqlQuery)}`
+                });
+
+                if (!response.ok) throw new Error(`Wikidata接続エラー (HTTP ${response.status})`); 
+
+                const data = await response.json();
+                structuredFlags = transformWikidataResponse(data); 
+
+            } catch (error) {
+                console.error('Wikidata検索に失敗:', error);
+                // 致命的なエラーの場合、ローカルデータにフォールバック
+                finalFlags = searchLocalData(keyword);
+                usedLocalFallback = true;
+            }
+
+            // 2. 結果の結合と補完
+            if (structuredFlags.length > 0) {
+                const localMap = new Map();
+                searchLocalData(keyword).forEach(flag => localMap.set(flag.name, flag));
+                
+                structuredFlags.forEach(flag => {
+                    if (!flag.image_url) {
+                        const localFlag = localMap.get(flag.name);
+                        if (localFlag) {
+                            flag.image_url = localFlag.image_url;
+                            flag.license_name = flag.license_name === '不明なライセンス' ? localFlag.license_name : flag.license_name;
+                            flag.source = 'Wikidata (画像:Local)';
+                            localMap.delete(flag.name); 
+                        }
+                    }
+                    finalFlags.push(flag);
+                });
+
+                localMap.forEach(flag => finalFlags.push(flag));
+                
+            } else if (!usedLocalFallback) { 
+                finalFlags = searchLocalData(keyword);
+                usedLocalFallback = true;
+            }
+
+            // 3. 表示
+            loadingMessage.classList.add('hidden');
+            
+            // 重複排除 (IDベース)
+            const uniqueFlags = Array.from(new Map(finalFlags.map(item => [item.id, item])).values());
+
+            resultCount.textContent = uniqueFlags.length;
+            renderFlags(uniqueFlags, flagsContainer);
+            
+            if (usedLocalFallback && uniqueFlags.length > 0) {
+                localDataNote.classList.remove('hidden');
+            } else if (uniqueFlags.length === 0) {
+                errorMessage.textContent = '該当する旗・紋章は見つかりませんでした。';
+                errorMessage.classList.remove('hidden');
+            }
+        });
+
+    </script>
 </body>
-  </html>
+</html>
